@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include "mangadownloader.h"
 
 class MainWindow : public QMainWindow
 {
@@ -12,7 +13,7 @@ public:
     ~MainWindow();
 
 private:
-
+    MangaDownloader *md;
 };
 
 #endif // MAINWINDOW_H
