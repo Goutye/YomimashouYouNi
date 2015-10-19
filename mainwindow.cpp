@@ -1,7 +1,10 @@
 #include <QPair>
 #include <QVBoxLayout>
 #include <QLabel>
+#include <QMenuBar>
 #include <QHBoxLayout>
+#include <QMenu>
+#include <QAction>
 #include "mainwindow.h"
 
 
@@ -45,6 +48,14 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(input, SIGNAL(returnPressed()), this, SLOT(launchDownload()));
     connect(fromChap, SIGNAL(returnPressed()), this, SLOT(launchDownload()));
     connect(toChap, SIGNAL(returnPressed()), this, SLOT(launchDownload()));
+
+    QMenu *menu = new QMenu("File");
+    menuBar()->addMenu(menu);
+
+    QAction *actionProxy = new QAction("Set proxy", menu);
+    menu->addAction(actionProxy);
+
+    connect(actionProxy, SIGNAL(triggered()), md, SLOT(setProxy()));
 }
 
 MainWindow::~MainWindow()

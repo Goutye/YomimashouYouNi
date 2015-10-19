@@ -19,6 +19,7 @@ public:
 signals:
 
 public slots:
+    void setProxy();
 
 private slots:
     void replyReceived(QNetworkReply *reply);
