@@ -35,7 +35,6 @@ MangaDownloader::MangaDownloader(QObject *parent) :
 void MangaDownloader::setProxy()
 {
     QDialog dialog;
-    dialog.setStyleSheet("background-color: #202020; color:#EEEEEE;");
     QFormLayout form(&dialog);
     QLabel *dialogLabel = new QLabel("Proxy");
     form.addRow(dialogLabel);
@@ -98,6 +97,9 @@ void MangaDownloader::download(QString name)
     QNetworkRequest request(websites.at(currentWebsite) + "/" + this->name);
     //request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
     manager.get(request);
+    nbChapter = 0;
+    nbPage = 0;
+    isDownloadImg = false;
 }
 
 QPair<QProgressBar*, QProgressBar*> MangaDownloader::progressBar()

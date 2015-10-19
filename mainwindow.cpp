@@ -49,7 +49,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(fromChap, SIGNAL(returnPressed()), this, SLOT(launchDownload()));
     connect(toChap, SIGNAL(returnPressed()), this, SLOT(launchDownload()));
 
-    QMenu *menu = new QMenu("File");
+    QMenu *menu = new QMenu("Options");
     menuBar()->addMenu(menu);
 
     QAction *actionProxy = new QAction("Set proxy", menu);
