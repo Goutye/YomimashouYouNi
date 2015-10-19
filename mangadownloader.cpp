@@ -6,10 +6,21 @@
 #include <QByteArray>
 #include <QFile>
 #include <QDebug>
+#include <sstream>
+#include <iomanip>
+#include <QNetworkProxy>
 
 MangaDownloader::MangaDownloader(QObject *parent) :
     QObject(parent)
 {
+    /*QNetworkProxy proxy;
+    proxy.setType(QNetworkProxy::HttpProxy);
+    proxy.setHostName("193.49.200.22");
+    proxy.setPort(3128);
+    proxy.setUser("");
+    proxy.setPassword("");
+    manager.setProxy(proxy);*/
+
     connect(&manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(replyReceived(QNetworkReply*)));
     doc = new QDomDocument;
     scanBar = new QProgressBar;
@@ -75,7 +86,11 @@ void MangaDownloader::replyReceived(QNetworkReply *reply)
     QByteArray data = reply->readAll();
 
     if (isDownloadImg) {
-        QFile file(QCoreApplication::applicationDirPath() + "/scans/" + name + QString("/%1/%2.jpg").arg(currentChapter).arg(currentPage));
+        std::stringstream dirName, fileName;
+        dirName << std::setfill('0') << std::setw(3) << currentChapter;
+        fileName << std::setfill('0') << std::setw(3) << currentPage;
+        QString dirStr = dirName.str().c_str(), fileStr = fileName.str().c_str();
+        QFile file(QCoreApplication::applicationDirPath() + "/scans/" + name + "/" + name + "-" + dirStr + "/" + fileStr);
         file.open(QFile::WriteOnly);
         file.write(data);
         file.close();
@@ -143,8 +158,10 @@ void MangaDownloader::loadChapter()
 
     nbPage = list.count();
 
-    QString path = QCoreApplication::applicationDirPath() + "/scans/" + name;
-    QDir(path).mkdir(path + QString("/%1").arg(currentChapter));
+    QString path = QCoreApplication::applicationDirPath() + "/scans/" + name + "/" + name + "-";
+    std::stringstream dirName;
+    dirName << std::setfill('0') << std::setw(3) << currentChapter;
+    QDir(path).mkdir(path + dirName.str().c_str());
 
     scanBar->setValue(currentChapter);
     pageBar->setValue(1);
