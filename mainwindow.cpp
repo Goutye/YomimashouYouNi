@@ -1,3 +1,6 @@
+#include <QPushButton>
+#include <QPixmap>
+#include <QFile>
 #include <QPair>
 #include <QVBoxLayout>
 #include <QLabel>
@@ -5,6 +8,7 @@
 #include <QHBoxLayout>
 #include <QMenu>
 #include <QAction>
+#include <QStyle>
 #include "mainwindow.h"
 
 
@@ -12,6 +16,10 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent)
 {
     md = new MangaDownloader;
+    md->moveToThread(&thread);
+    connect(&thread, &QThread::finished, md, &QObject::deleteLater);
+    thread.start();
+    md->load();
 
     QPair<QProgressBar*, QProgressBar*> bars = md->progressBar();
     scan = bars.first;
@@ -22,7 +30,10 @@ MainWindow::MainWindow(QWidget *parent) :
     QWidget *cWidget = new QWidget;
     QHBoxLayout *layoutH = new QHBoxLayout;
     QHBoxLayout *layoutChap = new QHBoxLayout;
+    layoutChap->setContentsMargins(2,2,2,2);
+    layoutChap->setSpacing(2);
     QVBoxLayout *layoutV = new QVBoxLayout;
+    layoutH->setContentsMargins(2,2,2,2);
     widget->setLayout(layoutH);
     cWidget->setLayout(layoutV);
     widgetChap->setLayout(layoutChap);
@@ -34,20 +45,35 @@ MainWindow::MainWindow(QWidget *parent) :
 
     fromChap = new QLineEdit;
     toChap = new QLineEdit;
-    layoutChap->addWidget(new QLabel("From:"));
+    layoutChap->addWidget(new QLabel("From:"), 0, Qt::AlignCenter);
     layoutChap->addWidget(fromChap);
-    layoutChap->addWidget(new QLabel("To:"));
+    layoutChap->addWidget(new QLabel("To:"), 0, Qt::AlignCenter);
     layoutChap->addWidget(toChap);
 
-    layoutV->addWidget(widget);
-    layoutV->addWidget(widgetChap);
-    layoutV->addWidget(scan);
-    layoutV->addWidget(page);
+    info = new QLabel("");
+    info->setAlignment(Qt::AlignCenter | Qt::AlignTop);
+
+    QPushButton *b = new QPushButton("Go!");
+    b->setStyleSheet("QPushButton {"
+                        "padding:2px;"
+                        "padding-left:10px;"
+                        "padding-right:10px;"
+                        "color:#EEEEEE;"
+                        "background-color:#343434;"
+                        "border-radius:5px;"
+                     "}");
+
+    layoutV->addWidget(widget, 1);
+    layoutV->addWidget(widgetChap, 1);
+    layoutV->addWidget(b, 1, Qt::AlignCenter);
+    layoutV->addWidget(info, 12);
+    layoutV->addWidget(scan, 1);
+    layoutV->addWidget(page, 1);
+    layoutV->setSpacing(5);
+    layoutV->setContentsMargins(2,2,2,2);
     setCentralWidget(cWidget);
 
-    connect(input, SIGNAL(returnPressed()), this, SLOT(launchDownload()));
-    connect(fromChap, SIGNAL(returnPressed()), this, SLOT(launchDownload()));
-    connect(toChap, SIGNAL(returnPressed()), this, SLOT(launchDownload()));
+    connect(b, SIGNAL(pressed()), this, SLOT(launchDownload()));
 
     QMenu *menu = new QMenu("Options");
     menuBar()->addMenu(menu);
@@ -56,15 +82,66 @@ MainWindow::MainWindow(QWidget *parent) :
     menu->addAction(actionProxy);
 
     connect(actionProxy, SIGNAL(triggered()), md, SLOT(setProxy()));
+    connect(md, SIGNAL(sendInfo(QString)), this, SLOT(insertInfo(QString)));
+    connect(md, SIGNAL(sendBackgroundPath(QString)), this, SLOT(setBackground(QString)));
+
+    setStyleSheet("QWidget {"
+                    "color: white;"
+                    "background-color: #212121;"
+                  "}"
+                  "QProgressBar {"
+                      "border: 2px solid grey;"
+                      "border-radius: 5px;"
+                      "background-color: #343434;"
+                      "text-align: center;"
+                  "}"
+                  "QProgressBar[scan=true]::chunk {"
+                      "background-color: #05B8CC;"
+                  "}"
+                  "QProgressBar::chunk {"
+                      "background-color: #BE87FF;"
+                  "}"
+                  "QLabel {"
+                  " color: #EEEEEE;"
+                  "}"
+                  "QLineEdit {"
+                  " background-color:#343434;"
+                  " border-radius: 5px;"
+                  "}");
 }
 
 MainWindow::~MainWindow()
 {
-
+    thread.quit();
+    thread.wait();
 }
 
 void MainWindow::launchDownload()
 {
     md->setChapInterval(fromChap->text().toInt(), toChap->text().toInt());
     md->download(input->text());
+    setFocus();
+}
+
+void MainWindow::insertInfo(QString s)
+{
+    info->setText(s);
+}
+
+void MainWindow::setBackground(QString path)
+{
+    QFile f;
+    f.setFileName(path);
+    f.open(QFile::ReadOnly);
+    QByteArray ba = f.readAll();
+    QPixmap p;
+    p.loadFromData(ba);
+    p = p.scaled(info->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+    info->setPixmap(p);
+
+//    setStyleSheet(styleSheet() + ""
+//                  "MainWindow {"
+//                  " background-image: url('"+ path +"');"
+//                  "}");
 }

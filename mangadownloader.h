@@ -16,7 +16,10 @@ public:
     void download(QString name);
     QPair<QProgressBar*, QProgressBar*> progressBar();
     void setChapInterval(int from, int to);
+    void load();
 signals:
+    void sendInfo(QString s);
+    void sendBackgroundPath(QString s);
 
 public slots:
     void setProxy();
@@ -33,7 +36,7 @@ private:
 
     QDomNode elementById(QString id, QString tagName);
 
-    QNetworkAccessManager manager;
+    QNetworkAccessManager *manager;
     QDomDocument *doc;
     QString name;
     int nbChapter = 0;
@@ -45,6 +48,8 @@ private:
     bool isDownloadImg = false;
     QProgressBar *scanBar;
     QProgressBar *pageBar;
+
+    QString pathDownloadFolder;
 
     int currentWebsite = 0;
     QList<QString> websites;

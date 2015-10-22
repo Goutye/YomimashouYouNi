@@ -17,13 +17,30 @@
 #include <QLabel>
 #include <QDialogButtonBox>
 #include <QTimer>
+#include <QFileDialog>
 
 MangaDownloader::MangaDownloader(QObject *parent) :
     QObject(parent)
 {
-    connect(&manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(replyReceived(QNetworkReply*)));
+
+}
+
+void MangaDownloader::load()
+{
+    pathDownloadFolder = "/storage/sdcard";
+    int i = 1;
+    if (QFile(pathDownloadFolder + QString("%1").arg(i)).exists())
+        pathDownloadFolder += QString("%1").arg(i);
+    else if (QFile(pathDownloadFolder + QString("%1").arg(i)).exists())
+        pathDownloadFolder += QString("%1").arg(0);
+    else
+        pathDownloadFolder = QCoreApplication::applicationDirPath();
+
+    manager = new QNetworkAccessManager;
+    connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(replyReceived(QNetworkReply*)), Qt::DirectConnection);
     doc = new QDomDocument;
     scanBar = new QProgressBar;
+    scanBar->setProperty("scan", true);
     scanBar->setFormat("%v/%m");
     pageBar = new QProgressBar;
     pageBar->setFormat("%v/%m");
@@ -81,7 +98,7 @@ void MangaDownloader::setProxy()
     proxy.setPort(port);
     proxy.setUser(user);
     proxy.setPassword(password);
-    manager.setProxy(proxy);
+    manager->setProxy(proxy);
 }
 
 void MangaDownloader::setChapInterval(int from, int to)
@@ -92,13 +109,15 @@ void MangaDownloader::setChapInterval(int from, int to)
 
 void MangaDownloader::download(QString name)
 {
-    this->name = name.replace(' ', "-");
+    this->name = name.replace(' ', "-").toLower();
 
     QNetworkRequest request(websites.at(currentWebsite) + "/" + this->name);
     //request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
-    manager.get(request);
+    manager->get(request);
     nbChapter = 0;
     nbPage = 0;
+    currentPage = 0;
+    currentChapter = 0;
     isDownloadImg = false;
 }
 
@@ -113,19 +132,23 @@ void MangaDownloader::replyReceived(QNetworkReply *reply)
         qDebug() << reply->errorString();
 
         if (reply->error() == QNetworkReply::ContentNotFoundError) {
-            if (nbChapter == 0) {
+
+            if (nbChapter <= 0) {
                 ++currentWebsite;
-                if (currentWebsite < websites.count())
+                if (currentWebsite < websites.count()) {
                     download(name);
+                }
                 else {
                     qDebug() << "Manga not found.";
+                    emit sendInfo("Manga not found");
+                    currentWebsite = 0;
                     return;
                 }
             } else {
                 ++currentWebsite;
                 if (currentWebsite < websites.count()) {
                     QNetworkRequest request(websites.at(currentWebsite) + "/" + name + QString("/%1/%2").arg(currentChapter).arg(currentPage));
-                    manager.get(request);
+                    manager->get(request);
                     qDebug() << QString(name + "/%1/%2").arg(currentChapter).arg(currentPage) << websites.at(currentWebsite);
                 }
                 else {
@@ -145,10 +168,15 @@ void MangaDownloader::replyReceived(QNetworkReply *reply)
         dirName << std::setfill('0') << std::setw(3) << currentChapter;
         fileName << std::setfill('0') << std::setw(3) << currentPage;
         QString dirStr = dirName.str().c_str(), fileStr = fileName.str().c_str();
-        QFile file(QCoreApplication::applicationDirPath() + "/scans/" + name + "/" + name + "-" + dirStr + "/" + fileStr);
+        QString filePath = pathDownloadFolder + "/scans/" + name + "/" + name + "-" + dirStr + "/" + fileStr + ".jpg";
+        QFile file(filePath);
         file.open(QFile::WriteOnly);
         file.write(data);
         file.close();
+
+        if (currentPage == 1) {
+            emit sendBackgroundPath(filePath);
+        }
 
         isDownloadImg = false;
         currentWebsite = 0;
@@ -186,6 +214,7 @@ void MangaDownloader::loadChapters()
         nbChapter = endChapter;
 
     qDebug() << list.count() - 1 << " chapters found.";
+    emit sendInfo(QString("%1 chapters found.").arg(list.count() - 1));
     currentChapter = startChapter;
     if (currentChapter > nbChapter) {
         qDebug() << currentChapter << "/" << nbChapter;
@@ -193,11 +222,11 @@ void MangaDownloader::loadChapters()
     }
 
     QNetworkRequest request(websites.at(currentWebsite) + "/" + name + QString("/%1").arg(currentChapter));
-    manager.get(request);
+    manager->get(request);
 
-    QString path = QCoreApplication::applicationDirPath() + "/scans";
+    QString path = pathDownloadFolder + "/scans";
     if (!QDir(path).exists())
-        QDir(QCoreApplication::applicationDirPath()).mkdir(path);
+        QDir(pathDownloadFolder).mkdir(path);
     if (!QDir(path + "/" + name).exists())
         QDir(path).mkdir(path + "/" + name);
 
@@ -213,7 +242,7 @@ void MangaDownloader::loadChapter()
 
     nbPage = list.count();
 
-    QString path = QCoreApplication::applicationDirPath() + "/scans/" + name + "/" + name + "-";
+    QString path = pathDownloadFolder + "/scans/" + name + "/" + name + "-";
     std::stringstream dirName;
     dirName << std::setfill('0') << std::setw(3) << currentChapter;
     QDir(path).mkdir(path + dirName.str().c_str());
@@ -229,7 +258,7 @@ void MangaDownloader::getImage() {
     QString url = elem.attribute("src");
 
     QNetworkRequest request(url);
-    manager.get(request);
+    manager->get(request);
 }
 
 void MangaDownloader::nextPage()
@@ -242,11 +271,12 @@ void MangaDownloader::nextPage()
 
         if (currentChapter > nbChapter) {
             qDebug() << "End of downloading";
+            emit sendInfo("Download ended.");
             return;
         }
     }
     QNetworkRequest request(websites.at(currentWebsite) + "/" + name + QString("/%1/%2").arg(currentChapter).arg(currentPage));
-    manager.get(request);
+    manager->get(request);
     qDebug() << QString(name + "/%1/%2").arg(currentChapter).arg(currentPage);
 
     pageBar->setValue(currentPage);
@@ -256,7 +286,7 @@ void MangaDownloader::nextChapter()
 {
     ++currentChapter;
     QNetworkRequest request(websites.at(currentWebsite) + "/" + name + QString("/%1").arg(currentChapter));
-    manager.get(request);
+    manager->get(request);
 }
 
 QDomNode MangaDownloader::elementById(QString id, QString tagName)

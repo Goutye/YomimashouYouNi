@@ -4,6 +4,10 @@
 #include <QMainWindow>
 #include <QLineEdit>
 #include <QProgressBar>
+#include <QThread>
+#include <QLabel>
+#include <QSpinBox>
+#include <QByteArray>
 #include "mangadownloader.h"
 
 class MainWindow : public QMainWindow
@@ -16,6 +20,8 @@ public:
 
 private slots:
     void launchDownload();
+    void insertInfo(QString s);
+    void setBackground(QString path);
 
 private:
     MangaDownloader *md;
@@ -24,6 +30,8 @@ private:
     QLineEdit *toChap;
     QProgressBar *scan;
     QProgressBar *page;
+    QThread thread;
+    QLabel *info;
 };
 
 #endif // MAINWINDOW_H
