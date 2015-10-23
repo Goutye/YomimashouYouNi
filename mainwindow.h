@@ -22,6 +22,7 @@ private slots:
     void launchDownload();
     void insertInfo(QString s);
     void setBackground(QString path);
+    void setProxy();
 
 private:
     MangaDownloader *md;

@@ -22,7 +22,7 @@ signals:
     void sendBackgroundPath(QString s);
 
 public slots:
-    void setProxy();
+    void setProxy(QNetworkProxy &proxy);
 
 private slots:
     void replyReceived(QNetworkReply *reply);

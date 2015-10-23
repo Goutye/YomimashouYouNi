@@ -17,7 +17,6 @@
 #include <QLabel>
 #include <QDialogButtonBox>
 #include <QTimer>
-#include <QFileDialog>
 
 MangaDownloader::MangaDownloader(QObject *parent) :
     QObject(parent)
@@ -49,55 +48,8 @@ void MangaDownloader::load()
     websites.append("http://www.mangapanda.com");
 }
 
-void MangaDownloader::setProxy()
+void MangaDownloader::setProxy(QNetworkProxy &proxy)
 {
-    QDialog dialog;
-    QFormLayout form(&dialog);
-    QLabel *dialogLabel = new QLabel("Proxy");
-    form.addRow(dialogLabel);
-
-    QLineEdit *lineEditHostname = new QLineEdit(&dialog);
-    lineEditHostname->setText("193.49.200.22");
-    form.addRow("Host name:", lineEditHostname);
-    QSpinBox *spinBoxPort = new QSpinBox(&dialog);
-    spinBoxPort->setMinimum(1);
-    spinBoxPort->setMaximum(99999);
-    spinBoxPort->setSingleStep(1);
-    spinBoxPort->setValue(3128);
-    form.addRow("Port:", spinBoxPort);
-    QLineEdit *lineEditPseudo = new QLineEdit(&dialog);
-    form.addRow("User:", lineEditPseudo);
-    QLineEdit *lineEditPassword = new QLineEdit(&dialog);
-    lineEditPassword->setEchoMode(QLineEdit::Password);
-    form.addRow("Password:", lineEditPassword);
-
-    QDialogButtonBox buttonBox(QDialogButtonBox::Ok, Qt::Horizontal, &dialog);
-    form.addRow(&buttonBox);
-    QObject::connect(&buttonBox, SIGNAL(accepted()), &dialog, SLOT(accept()));
-    QString hostname, user, password;
-    int port;
-
-    do {
-        if (dialog.exec() == QDialog::Accepted) {
-            hostname = lineEditHostname->text();
-            user = lineEditPseudo->text();
-            password = lineEditPassword->text();
-            port = spinBoxPort->value();
-            if (hostname.isEmpty()) {
-                dialogLabel->setText("Hostname empty.");
-            }
-        } else {
-            QTimer::singleShot(0, this, SLOT(close()));
-            return;
-        }
-    } while(hostname.isEmpty());
-
-    QNetworkProxy proxy;
-    proxy.setType(QNetworkProxy::HttpProxy);
-    proxy.setHostName(hostname);
-    proxy.setPort(port);
-    proxy.setUser(user);
-    proxy.setPassword(password);
     manager->setProxy(proxy);
 }
 
