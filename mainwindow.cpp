@@ -168,9 +168,10 @@ void MainWindow::setProxy()
     lineEditPassword->setEchoMode(QLineEdit::Password);
     form.addRow("Password:", lineEditPassword);
 
-    QDialogButtonBox buttonBox(QDialogButtonBox::Ok, Qt::Horizontal, &dialog);
+    QDialogButtonBox buttonBox(QDialogButtonBox::Cancel | QDialogButtonBox::Ok, Qt::Horizontal, &dialog);
     form.addRow(&buttonBox);
     QObject::connect(&buttonBox, SIGNAL(accepted()), &dialog, SLOT(accept()));
+    QObject::connect(&buttonBox, SIGNAL(rejected()), &dialog, SLOT(close()));
     QString hostname, user, password;
     int port;
 
@@ -184,7 +185,6 @@ void MainWindow::setProxy()
                 dialogLabel->setText("Hostname empty.");
             }
         } else {
-            QTimer::singleShot(0, this, SLOT(close()));
             return;
         }
     } while(hostname.isEmpty());
