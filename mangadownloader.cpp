@@ -17,6 +17,7 @@
 #include <QLabel>
 #include <QDialogButtonBox>
 #include <QTimer>
+#include <QFileDialog>
 
 MangaDownloader::MangaDownloader(QObject *parent) :
     QObject(parent)
@@ -33,7 +34,7 @@ void MangaDownloader::load()
     else if (QFile(pathDownloadFolder + QString("%1").arg(i)).exists())
         pathDownloadFolder += QString("%1").arg(0);
     else
-        pathDownloadFolder = QCoreApplication::applicationDirPath();
+        pathDownloadFolder = QFileDialog::getExistingDirectory();
 
     manager = new QNetworkAccessManager;
     connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(replyReceived(QNetworkReply*)), Qt::DirectConnection);
