@@ -126,6 +126,7 @@ MainWindow::MainWindow(QWidget *parent) :
                   " background-color:#343434;"
                   " border-radius: 5px;"
                   "}");
+    setFixedHeight(400);
 }
 
 MainWindow::~MainWindow()
